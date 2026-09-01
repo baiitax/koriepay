@@ -1,0 +1,172 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   KORIEPAY COMMAND CENTER — DESIGN TOKENS
+   Light is the default theme; `.dark` on <html> switches to the deep
+   neutral command-center canvas. All surfaces/text derive from these
+   RGB triplets so every component adapts to both themes automatically.
+   ========================================================================== */
+
+:root {
+    /* canvas + surfaces */
+    --c-bg: 241 244 248;            /* soft neutral light canvas */
+    --c-surface: 255 255 255;       /* glass panel */
+    --c-surface-2: 248 250 252;     /* raised / inset panel */
+    --c-line: 226 232 240;          /* borders (slate-200) */
+    /* text */
+    --c-ink: 15 23 42;              /* slate-900 */
+    --c-muted: 100 116 139;         /* slate-500 */
+    --c-faint: 148 163 184;         /* slate-400 */
+    /* soft tinted fills for badges */
+    --c-brand-soft: 21 137 135;
+    --c-ok-soft: 34 197 94;
+    --c-alert-soft: 248 141 37;
+    --c-crit-soft: 239 68 68;
+}
+
+.dark {
+    /* deep neutral command-center canvas */
+    --c-bg: 9 13 24;                /* #090d18 — deep navy-black */
+    --c-surface: 18 25 43;          /* #12192b glass panel */
+    --c-surface-2: 24 33 56;        /* #182138 raised */
+    --c-line: 42 54 82;             /* hairline borders */
+    /* text */
+    --c-ink: 230 237 247;           /* #e6edf7 high-contrast */
+    --c-muted: 148 163 184;         /* slate-400 */
+    --c-faint: 100 116 139;         /* slate-500 */
+    /* soft tinted fills (darker for dark theme) */
+    --c-brand-soft: 21 137 135;
+    --c-ok-soft: 34 197 94;
+    --c-alert-soft: 248 141 37;
+    --c-crit-soft: 239 68 68;
+}
+
+@layer base {
+    html {
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+    }
+
+    body {
+        @apply bg-canvas text-ink font-sans antialiased;
+        font-feature-settings: 'tnum';
+    }
+
+    /* Focus visibility: keyboard users always see a strong ring. */
+    :focus-visible {
+        @apply outline-none ring-2 ring-brand/70 ring-offset-2 ring-offset-canvas;
+    }
+
+    ::selection {
+        @apply bg-brand-2/25 text-ink;
+    }
+
+    /* Respect reduced motion — directive: never animate financial numbers
+       excessively and always support prefers-reduced-motion. */
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+        }
+    }
+}
+
+@layer components {
+    /* ------------------------------------------------------------------
+       GLASS SURFACE PRIMITIVE
+       Controlled blur + subtle transparency + 1px hairline + soft shadow.
+       Never extreme blur or low contrast (directive §70).
+       ------------------------------------------------------------------ */
+    .glass {
+        @apply bg-panel/80 border border-line backdrop-blur-xl;
+    }
+
+    .glass-strong {
+        @apply bg-panel/90 border border-line backdrop-blur-2xl;
+    }
+
+    .glass-hover {
+        @apply transition-all duration-200 ease-glass hover:border-brand/40 hover:shadow-glass;
+    }
+
+    .glass-inset {
+        @apply bg-panel-2/80 border border-line;
+    }
+
+    /* Raised card with hairline highlight (command-center panels) */
+    .panel {
+        @apply glass shadow-glass dark:shadow-glass-dark rounded-2xl;
+    }
+
+    /* Hairline top accent used for alert/decision priority cards */
+    .accent-top {
+        @apply border-t-2;
+    }
+
+    /* ------------------------------------------------------------------
+       STATUS SURFACES — semantic but never color-only (icon+label always)
+       ------------------------------------------------------------------ */
+    .tone-ok      { @apply text-ok bg-ok/10 border-ok/25; }
+    .tone-warn    { @apply text-ink bg-brand-gold/15 border-brand-gold/30; }
+    .tone-alert   { @apply text-brand-orange bg-brand-orange/10 border-brand-orange/30; }
+    .tone-crit    { @apply text-crit bg-crit/10 border-crit/25; }
+    .tone-info    { @apply text-brand bg-brand/10 border-brand/25; }
+    .tone-neutral { @apply text-muted bg-panel-2 border-line; }
+
+    /* ------------------------------------------------------------------
+       SCROLLBARS
+       ------------------------------------------------------------------ */
+    .cc-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+    .cc-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .cc-scrollbar::-webkit-scrollbar-thumb {
+        background: rgb(var(--c-faint) / 0.35);
+        border-radius: 9999px;
+    }
+    .cc-scrollbar::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-faint) / 0.6); }
+    .cc-scrollbar { scrollbar-width: thin; scrollbar-color: rgb(var(--c-faint) / 0.35) transparent; }
+
+    /* ------------------------------------------------------------------
+       SKELETON LOADING (directive §68 — never blank screens)
+       ------------------------------------------------------------------ */
+    .skeleton {
+        @apply rounded-lg;
+        background: linear-gradient(90deg,
+            rgb(var(--c-surface-2)) 25%,
+            rgb(var(--c-surface)) 50%,
+            rgb(var(--c-surface-2)) 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.6s linear infinite;
+    }
+
+    /* ------------------------------------------------------------------
+       KEYBOARD KEY (directive §55–56)
+       ------------------------------------------------------------------ */
+    .kbd {
+        @apply inline-flex items-center justify-center min-w-[1.4rem] h-5 px-1.5 rounded-md border border-line bg-panel-2 text-[10px] font-bold text-muted shadow-[0_1px_0_rgba(0,0,0,0.08)] dark:shadow-[0_1px_0_rgba(255,255,255,0.06)];
+    }
+}
+
+/* Legacy preloader + custom scrollbar kept for backward compatibility with
+   existing pages that reference these classes. */
+[x-cloak] { display: none !important; }
+
+#preloader {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    transition: opacity 0.5s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+.custom-scrollbar:hover::-webkit-scrollbar-thumb { background: #94a3b8; }

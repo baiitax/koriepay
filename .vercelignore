@@ -1,0 +1,23 @@
+# ── Vercel deployment excludes ─────────────────────────────────────────────
+# vendor/ is rebuilt on Vercel by the vercel-php runtime (composer install).
+# Built front-end assets are NOT committed either — they are built during the
+# Vercel build (npm run build) and the build output (public/build) is served.
+# /public/build
+
+# Local-only files (would leak secrets or bloat the deployment)
+.env
+.env.*
+!.env.example
+database/*.sqlite
+database/*.sqlite-journal
+storage/logs/*
+storage/app/private/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+
+# Dev tooling
+/node_modules
+/tests
+/.git
+/.github
