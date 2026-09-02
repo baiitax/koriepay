@@ -48,21 +48,7 @@ return Application::configure(basePath: dirname(__DIR__))
     })
 
     ->withExceptions(function (Exceptions $exceptions) {
-        // Surface exception class on /up so we can diagnose Vercel 500s without
-        // APP_DEBUG (never include the message — it can contain DSNs).
-        $exceptions->render(function (\Throwable $e, \Illuminate\Http\Request $request) {
-            if ($request->is('up') || $request->header('X-KoriePay-Debug') === '1') {
-                return response()->json([
-                    'status' => 'error',
-                    'exception' => $e::class,
-                    'at' => basename($e->getFile()).':'.$e->getLine(),
-                    'message' => mb_substr($e->getMessage(), 0, 240),
-                    'trace' => array_values(array_filter(array_map(function ($f) {
-                        $c = ($f['class'] ?? '').($f['type'] ?? '').($f['function'] ?? '');
-                        return $c === '' ? null : $c;
-                    }, array_slice($e->getTrace(), 0, 8)))),
-                ], 500);
-            }
-        });
+        // Financial exceptions are handled by dedicated middleware/actions;
+        // global handler keeps responses opaque (no stack traces in prod).
     })
     ->create();
