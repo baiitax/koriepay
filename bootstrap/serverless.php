@@ -95,6 +95,16 @@ function koriepay_prepare_serverless_runtime(string $root): ?string
         }
     }
 
+    // channels.php is loaded on every request. An empty or unknown
+    // BROADCAST_CONNECTION (common leftover dashboard value) throws
+    // InvalidArgumentException in BroadcastManager — a 500 on /up.
+    $broadcast = (string) (getenv('BROADCAST_CONNECTION') ?: '');
+    if ($broadcast === '' || ! in_array($broadcast, ['log', 'null', 'reverb', 'pusher', 'ably'], true)) {
+        putenv('BROADCAST_CONNECTION=log');
+        $_ENV['BROADCAST_CONNECTION'] = 'log';
+        $_SERVER['BROADCAST_CONNECTION'] = 'log';
+    }
+
     $appUrl = getenv('APP_URL');
     if (($appUrl === false || $appUrl === '') && ($vercelUrl = getenv('VERCEL_URL'))) {
         $url = 'https://'.$vercelUrl;
