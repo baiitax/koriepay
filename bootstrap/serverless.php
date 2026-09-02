@@ -27,6 +27,13 @@ function koriepay_prepare_serverless_runtime(string $root): ?string
         header('X-KoriePay-Boot: serverless');
     }
 
+    // vercel-php sets SCRIPT_NAME/SCRIPT_FILENAME to the lambda entrypoint
+    // (api/index.php). Symfony then mis-parses the public URI.
+    $_SERVER['DOCUMENT_ROOT'] = $root.'/public';
+    $_SERVER['SCRIPT_NAME'] = '/index.php';
+    $_SERVER['PHP_SELF'] = '/index.php';
+    $_SERVER['SCRIPT_FILENAME'] = $root.'/public/index.php';
+
     if (empty($_SERVER['REMOTE_ADDR'])) {
         $forwarded = $_SERVER['HTTP_X_FORWARDED_FOR']
             ?? $_SERVER['HTTP_X_REAL_IP']

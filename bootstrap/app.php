@@ -48,7 +48,16 @@ return Application::configure(basePath: dirname(__DIR__))
     })
 
     ->withExceptions(function (Exceptions $exceptions) {
-        // Financial exceptions are handled by dedicated middleware/actions;
-        // global handler keeps responses opaque (no stack traces in prod).
+        // Surface exception class on /up so we can diagnose Vercel 500s without
+        // APP_DEBUG (never include the message — it can contain DSNs).
+        $exceptions->render(function (\Throwable $e, \Illuminate\Http\Request $request) {
+            if ($request->is('up')) {
+                return response()->json([
+                    'status' => 'error',
+                    'exception' => $e::class,
+                    'at' => basename($e->getFile()).':'.$e->getLine(),
+                ], 500);
+            }
+        });
     })
     ->create();
