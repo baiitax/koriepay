@@ -77,6 +77,7 @@ function koriepay_prepare_serverless_runtime(string $root): ?string
         'CACHE_STORE' => 'array',
         'SESSION_DRIVER' => 'cookie',
         'QUEUE_CONNECTION' => 'sync',
+        'BROADCAST_CONNECTION' => 'log',
         'VIEW_COMPILED_PATH' => $tmp.'/storage/framework/views',
         'APP_CONFIG_CACHE' => $tmp.'/bootstrap/cache/config.php',
         'APP_EVENTS_CACHE' => $tmp.'/bootstrap/cache/events.php',
