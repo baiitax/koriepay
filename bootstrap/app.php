@@ -56,6 +56,7 @@ return Application::configure(basePath: dirname(__DIR__))
                     'status' => 'error',
                     'exception' => $e::class,
                     'at' => basename($e->getFile()).':'.$e->getLine(),
+                    'message' => mb_substr($e->getMessage(), 0, 240),
                 ], 500);
             }
         });

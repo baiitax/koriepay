@@ -105,6 +105,22 @@ function koriepay_prepare_serverless_runtime(string $root): ?string
         $_SERVER['BROADCAST_CONNECTION'] = 'log';
     }
 
+    // Database/redis sessions and empty SESSION_DRIVER 500 the web group
+    // (ArgumentCountError in Support\Manager when the driver name is "").
+    $session = (string) (getenv('SESSION_DRIVER') ?: '');
+    if (! in_array($session, ['cookie', 'array'], true)) {
+        putenv('SESSION_DRIVER=cookie');
+        $_ENV['SESSION_DRIVER'] = 'cookie';
+        $_SERVER['SESSION_DRIVER'] = 'cookie';
+    }
+
+    $cache = (string) (getenv('CACHE_STORE') ?: getenv('CACHE_DRIVER') ?: '');
+    if (! in_array($cache, ['array', 'file', 'null'], true)) {
+        putenv('CACHE_STORE=array');
+        $_ENV['CACHE_STORE'] = 'array';
+        $_SERVER['CACHE_STORE'] = 'array';
+    }
+
     $appUrl = getenv('APP_URL');
     if (($appUrl === false || $appUrl === '') && ($vercelUrl = getenv('VERCEL_URL'))) {
         $url = 'https://'.$vercelUrl;
