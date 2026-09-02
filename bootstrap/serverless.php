@@ -22,6 +22,11 @@ function koriepay_prepare_serverless_runtime(string $root): ?string
 {
     chdir($root);
 
+    // Visible in response headers so we can tell this boot path is live.
+    if (! headers_sent()) {
+        header('X-KoriePay-Boot: serverless');
+    }
+
     if (empty($_SERVER['REMOTE_ADDR'])) {
         $forwarded = $_SERVER['HTTP_X_FORWARDED_FOR']
             ?? $_SERVER['HTTP_X_REAL_IP']
