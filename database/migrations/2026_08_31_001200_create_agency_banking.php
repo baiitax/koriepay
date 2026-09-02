@@ -22,6 +22,23 @@ return new class extends Migration
 {
     public function up(): void
     {
+        Schema::create('aggregators', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('user_id')->nullable()->unique();
+            $table->string('code', 20)->unique();
+            $table->string('name');
+            $table->string('status', 20)->default('pending'); // pending|active|suspended|inactive
+            $table->string('country_iso2', 2);
+            $table->string('region', 60)->nullable();
+            $table->string('city', 60)->nullable();
+            $table->string('kyc_status', 20)->default('unverified');
+            $table->decimal('commission_override_rate', 8, 4)->nullable();
+            $table->timestamps();
+
+            $table->foreign('user_id')->references('id')->on('users');
+            $table->index(['status', 'country_iso2']);
+        });
+
         Schema::create('agents', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id')->unique();
@@ -41,23 +58,6 @@ return new class extends Migration
             $table->foreign('aggregator_id')->references('id')->on('aggregators');
             $table->index(['status', 'country_iso2']);
             $table->index('aggregator_id');
-        });
-
-        Schema::create('aggregators', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('user_id')->nullable()->unique();
-            $table->string('code', 20)->unique();
-            $table->string('name');
-            $table->string('status', 20)->default('pending'); // pending|active|suspended|inactive
-            $table->string('country_iso2', 2);
-            $table->string('region', 60)->nullable();
-            $table->string('city', 60)->nullable();
-            $table->string('kyc_status', 20)->default('unverified');
-            $table->decimal('commission_override_rate', 8, 4)->nullable();
-            $table->timestamps();
-
-            $table->foreign('user_id')->references('id')->on('users');
-            $table->index(['status', 'country_iso2']);
         });
 
         Schema::create('agency_operations', function (Blueprint $table) {

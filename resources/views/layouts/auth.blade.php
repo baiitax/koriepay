@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Host+Grostek:ital,wght@0,300;0,700;1,300;1,700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
     
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <x-vite-assets />
     
     <style>
         .font-sans { font-family: 'Host Grostek', sans-serif; }

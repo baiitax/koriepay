@@ -20,6 +20,12 @@ use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
+    public function register(): void
+    {
+        // Swap the pgsql PDO connector so Neon channel_binding reaches the DSN.
+        $this->app->bind('db.connector.pgsql', fn () => new \App\Database\NeonPostgresConnector);
+    }
+
     public function boot(): void
     {
         // Engage the Blackbox wiretap

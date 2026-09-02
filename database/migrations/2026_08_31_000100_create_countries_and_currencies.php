@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -14,6 +15,16 @@ return new class extends Migration
 {
     public function up(): void
     {
+        Schema::create('currencies', function (Blueprint $table) {
+            $table->string('code', 3)->primary();             // NGN, XOF, USD…
+            $table->string('name');
+            $table->string('symbol', 8)->default('');
+            $table->unsignedTinyInteger('minor_units')->default(2);
+            $table->boolean('is_fiat')->default(true);
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+
         Schema::create('countries', function (Blueprint $table) {
             $table->id();
             $table->string('iso2', 2)->unique();
@@ -29,26 +40,15 @@ return new class extends Migration
             $table->foreign('currency_code')->references('code')->on('currencies');
         });
 
-        Schema::create('currencies', function (Blueprint $table) {
-            $table->string('code', 3)->primary();             // NGN, XOF, USD…
-            $table->string('name');
-            $table->string('symbol', 8)->default('');
-            $table->unsignedTinyInteger('minor_units')->default(2);
-            $table->boolean('is_fiat')->default(true);
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
-        });
-
-        // Seed the two launch markets (additive; other countries come by seed/config)
         DB::table('currencies')->insert([
-            ['code' => 'NGN', 'name' => 'Nigerian Naira',   'symbol' => '₦', 'minor_units' => 2, 'is_fiat' => 1, 'is_active' => 1, 'created_at' => now(), 'updated_at' => now()],
-            ['code' => 'XOF', 'name' => 'West African CFA', 'symbol' => 'CFA', 'minor_units' => 0, 'is_fiat' => 1, 'is_active' => 1, 'created_at' => now(), 'updated_at' => now()],
-            ['code' => 'USD', 'name' => 'US Dollar',        'symbol' => '$', 'minor_units' => 2, 'is_fiat' => 1, 'is_active' => 1, 'created_at' => now(), 'updated_at' => now()],
+            ['code' => 'NGN', 'name' => 'Nigerian Naira',   'symbol' => '₦', 'minor_units' => 2, 'is_fiat' => true, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()],
+            ['code' => 'XOF', 'name' => 'West African CFA', 'symbol' => 'CFA', 'minor_units' => 0, 'is_fiat' => true, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()],
+            ['code' => 'USD', 'name' => 'US Dollar',        'symbol' => '$', 'minor_units' => 2, 'is_fiat' => true, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
         DB::table('countries')->insert([
-            ['iso2' => 'NG', 'iso3' => 'NGA', 'name' => 'Nigeria', 'calling_code' => '+234', 'currency_code' => 'NGN', 'regulator' => 'CBN', 'ecosystem' => null, 'is_active' => 1, 'created_at' => now(), 'updated_at' => now()],
-            ['iso2' => 'NE', 'iso3' => 'NER', 'name' => 'Niger',   'calling_code' => '+227', 'currency_code' => 'XOF', 'regulator' => 'BCEAO', 'ecosystem' => 'UEMOA', 'is_active' => 1, 'created_at' => now(), 'updated_at' => now()],
+            ['iso2' => 'NG', 'iso3' => 'NGA', 'name' => 'Nigeria', 'calling_code' => '+234', 'currency_code' => 'NGN', 'regulator' => 'CBN', 'ecosystem' => null, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()],
+            ['iso2' => 'NE', 'iso3' => 'NER', 'name' => 'Niger',   'calling_code' => '+227', 'currency_code' => 'XOF', 'regulator' => 'BCEAO', 'ecosystem' => 'UEMOA', 'is_active' => true, 'created_at' => now(), 'updated_at' => now()],
         ]);
     }
 

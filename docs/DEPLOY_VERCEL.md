@@ -49,7 +49,7 @@ Everything marked ✅ is **already committed and ready** — you only need to co
 
 | File | Purpose | Status |
 |---|---|---|
-| `api/index.php` | Serverless entrypoint — boots the Laravel kernel from `$_SERVER` globals (`Request::createFromGlobals()`), which is the pattern that works inside the runtime. | ✅ committed |
+| `api/index.php` + `bootstrap/serverless.php` | Serverless entrypoint. Normalises CGI (`REMOTE_ADDR`, HTTPS, `/tmp` storage, `APP_KEY` fallback) then boots the kernel. | ✅ committed |
 | `vercel.json` | Function config (`vercel-php@0.7.4`), route table, `/tmp` cache paths, serverless-safe env defaults. | ✅ committed |
 | `.vercelignore` | Excludes `vendor/` (rebuilt on Vercel), `.env*`, sqlite, logs, tests. | ✅ committed |
 | `.env.production.example` | Template for every Vercel environment variable with comments. | ✅ committed |
@@ -123,27 +123,31 @@ Set these in **Vercel → Project → Settings → Environment Variables** (add 
 
 ### Required — database (Neon)
 
+Paste **either** the pooled connection string **or** the split `DB_*` vars. `bootstrap/serverless.php` copies `DATABASE_URL` → `DB_URL` so Laravel sees it.
+
 | Variable | Value |
 |---|---|
+| `DATABASE_URL` / `DB_URL` | Pooled URI: `postgresql://USER:PASS@HOST-pooler…/neondb?sslmode=require&channel_binding=require` |
 | `DB_CONNECTION` | `pgsql` |
-| `DB_HOST` | your `ep-….neon.tech` host |
+| `DB_HOST` | pooled host (`ep-…-pooler.c-2.….neon.tech`) — **not** the direct compute host |
 | `DB_PORT` | `5432` |
-| `DB_DATABASE` | `neondb` (Neon default DB name) |
-| `DB_USERNAME` | your Neon user |
-| `DB_PASSWORD` | your Neon password |
+| `DB_DATABASE` | `neondb` |
+| `DB_USERNAME` | Neon role (e.g. `neondb_owner`) |
+| `DB_PASSWORD` | Neon password |
 | `DB_SSLMODE` | `require` |
+| `DB_CHANNEL_BINDING` | `require` |
 
-Run migrations **once**, from your machine or CI, against the Neon DB:
+TLS is mandatory (`sslmode=require`). Channel binding is forwarded onto the PDO DSN by `App\Database\NeonPostgresConnector`. Prepared statements are disabled (`PDO::PGSQL_ATTR_DISABLE_PREPARES`) because the pooled host is PgBouncer.
+
+Run migrations **once**, from your machine or CI, against the Neon DB (use the **direct** host if the pooler rejects DDL):
 
 ```bash
 composer install
-php artisan migrate --force \
-  --env=production \
-  --database=pgsql \
-  # with DB_* env vars exported
+php artisan migrate --force
 ```
 
 > ⚠️ **Do not run `migrate:fresh` against production** — it drops data. The migration set is additive and re-runnable; use `php artisan migrate --force`.
+> ⚠️ **Never commit `.env` or the connection string.** Set secrets only in Vercel → Settings → Environment Variables (Production + Preview).
 
 ### Required — object storage (Cloudflare R2 example)
 
@@ -174,18 +178,22 @@ The Document Center and Report generation read/write via `Storage::disk(config('
 
 ## 6. Database (Neon Postgres)
 
-1. Sign up at **neon.tech** → **Create project** (region near your users, e.g. `Frankfurt (eu-central-1)`).
-2. Copy the connection string: `postgresql://user:pass@ep-xxxx.eu-central-1.aws.neon.tech/neondb?sslmode=require`.
-3. Fill the `DB_*` vars in Vercel (split the string into host/port/db/user/password, `sslmode=require`).
-4. Run the migrations from a local shell or CI once:
+1. Sign up at **neon.tech** → **Create project** (region near your users).
+2. Copy the **pooled** connection string from the dashboard. It looks like:
+   `postgresql://user:pass@ep-xxxx-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require`
+3. In Vercel, set `DATABASE_URL` (and/or `DB_URL`) to that string **or** split it into `DB_HOST` / `DB_PORT` / `DB_DATABASE` / `DB_USERNAME` / `DB_PASSWORD` with `DB_CONNECTION=pgsql`, `DB_SSLMODE=require`, `DB_CHANNEL_BINDING=require`.
+4. Run the migrations from a local shell **before** (or right after) the first production deploy. Do this against Neon, not SQLite:
 
 ```bash
-export DB_CONNECTION=pgsql DB_HOST=... DB_PORT=5432 DB_DATABASE=neondb \
-       DB_USERNAME=... DB_PASSWORD=... DB_SSLMODE=require
+export DB_CONNECTION=pgsql
+export DATABASE_URL='postgresql://…-pooler…/neondb?sslmode=require'
+export DB_SSLMODE=require DB_CHANNEL_BINDING=require
 php artisan migrate --force
 ```
 
-The schema is database-agnostic (Schema builder + `enum()` columns, which Laravel maps to `varchar` + check constraints on Postgres) — no raw SQL to patch.
+If the pooler errors on DDL, rerun with the **direct** compute host (`ep-xxxx.c-2.…neon.tech`, no `-pooler`). Runtime traffic on Vercel should stay on the pooled host.
+
+The schema is database-agnostic (Schema builder + `enum()` columns, which Laravel maps to `varchar` + check constraints on Postgres). Two migrations create parent tables before FKs (`currencies` before `countries`; `aggregators` before `agents`).
 
 **Backups:** Neon free tier auto-snapshots for 7 days. Enable **point-in-time restore** if you need more.
 
@@ -313,6 +321,8 @@ The insights/EOD UI also offers a manual **"Write read-model snapshot"** button 
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
+| **Every URL is a generic `500 Server Error`** (including `/up`) | vercel-php omits `REMOTE_ADDR` unless `x-real-ip` is present; `TrustProxies(at: '*')` then TypeErrors. And/or `APP_KEY` is missing so `EncryptCookies` throws. | Fixed in `bootstrap/serverless.php` (sets `REMOTE_ADDR` from `x-forwarded-for`, `/tmp` paths, host-derived `APP_KEY` fallback). Still set a real `APP_KEY` in Vercel → Settings → Environment Variables. Redeploy after pulling this fix. |
+| `No application encryption key has been specified` | `APP_KEY` not set on the Vercel project | `php artisan key:generate --show` and paste into Vercel env (Production + Preview) |
 | `404` on `/build/assets/…` | Vite assets not built/deployed | Run `npm run build` locally, verify `public/build` exists in the deploy; check the `vercel` composer script ran |
 | `502`/`504` on first deploy | Build still installing PHP deps | Wait, check Build Logs; retry deploy |
 | `Connection refused` to DB | Neon paused / wrong `DB_HOST` | Neon free pauses after inactivity — wake it in dashboard; double-check env vars |

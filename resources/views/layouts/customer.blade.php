@@ -17,7 +17,7 @@
     <title>{{ $title ?? 'KoriePay' }} · KoriePay</title>
 
     {{-- System font stack (zero network dependency — low-bandwidth friendly). --}}
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <x-vite-assets />
     @livewireStyles
 
     <style>

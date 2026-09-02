@@ -5,24 +5,24 @@ declare(strict_types=1);
 /**
  * Vercel serverless entrypoint (vercel-php runtime).
  *
- * Vercel has no persistent PHP-FPM; every request is handled by this single
- * serverless function which boots the full Laravel kernel. The `vercel.json`
- * route table sends all non-asset traffic here.
+ * vercel-php CGI sets cwd to the PHP runtime directory (not the Laravel root)
+ * and omits REMOTE_ADDR unless x-real-ip is present. bootstrap/serverless.php
+ * normalises that before the kernel boots.
  */
 
-use Illuminate\Http\Request;
+$root = dirname(__DIR__);
 
-require __DIR__.'/../vendor/autoload.php';
+require_once $root.'/bootstrap/serverless.php';
+
+$storagePath = koriepay_prepare_serverless_runtime($root);
+
+require $root.'/vendor/autoload.php';
 
 /** @var \Illuminate\Foundation\Application $app */
-$app = require __DIR__.'/../bootstrap/app.php';
+$app = require $root.'/bootstrap/app.php';
 
-// Build the request from $_SERVER instead of Request::capture(): capture()
-// relies on real SAPI input and can return null inside the serverless PHP
-// runtime (there is no php-fpm/Apache). Constructing from globals works the
-// same on Vercel and locally.
-$request = Request::createFromGlobals();
+if (is_string($storagePath) && $storagePath !== '') {
+    $app->useStoragePath($storagePath);
+}
 
-// handleRequest() boots the kernel, handles the request, SENDS the response
-// to the client and terminates the kernel (returns void).
-$app->handleRequest($request);
+$app->handleRequest(\Illuminate\Http\Request::createFromGlobals());

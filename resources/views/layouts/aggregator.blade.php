@@ -25,7 +25,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="description" content="KoriePay Aggregator — the operating system for your agent network.">
     <title>{{ $title ?? 'Aggregator Command' }} · KoriePay</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <x-vite-assets />
     @livewireStyles
     <style>
         [x-cloak] { display: none !important; }

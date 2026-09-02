@@ -32,7 +32,7 @@
     {{-- Command palette actions injected server-side (permission-filtered in Phase 4+). --}}
     <script>window.kpPaletteActions = @json($paletteActions);</script>
 
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <x-vite-assets />
 </head>
 
 <body

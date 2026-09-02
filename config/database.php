@@ -85,7 +85,8 @@ return [
 
         'pgsql' => [
             'driver' => 'pgsql',
-            'url' => env('DB_URL'),
+            // Neon / Vercel dashboards call this DATABASE_URL; Laravel prefers DB_URL.
+            'url' => env('DB_URL', env('DATABASE_URL')),
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '5432'),
             'database' => env('DB_DATABASE', 'laravel'),
@@ -95,7 +96,15 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
-            'sslmode' => env('DB_SSLMODE', 'prefer'),
+            // Neon requires TLS. Local Postgres can set DB_SSLMODE=prefer.
+            'sslmode' => env('DB_SSLMODE', 'require'),
+            // Forwarded onto the PDO DSN by App\Database\NeonPostgresConnector.
+            'channel_binding' => env('DB_CHANNEL_BINDING', 'require'),
+            'application_name' => env('DB_APPLICATION_NAME', 'KoriePay'),
+            'options' => extension_loaded('pdo_pgsql') ? array_filter([
+                // Neon pooled host is PgBouncer: disable native prepared statements.
+                defined('PDO::PGSQL_ATTR_DISABLE_PREPARES') ? PDO::PGSQL_ATTR_DISABLE_PREPARES : null => true,
+            ], fn ($key) => $key !== null, ARRAY_FILTER_USE_KEY) : [],
         ],
 
         'sqlsrv' => [
