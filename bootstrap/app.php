@@ -57,6 +57,10 @@ return Application::configure(basePath: dirname(__DIR__))
                     'exception' => $e::class,
                     'at' => basename($e->getFile()).':'.$e->getLine(),
                     'message' => mb_substr($e->getMessage(), 0, 240),
+                    'trace' => array_values(array_filter(array_map(function ($f) {
+                        $c = ($f['class'] ?? '').($f['type'] ?? '').($f['function'] ?? '');
+                        return $c === '' ? null : $c;
+                    }, array_slice($e->getTrace(), 0, 8)))),
                 ], 500);
             }
         });
