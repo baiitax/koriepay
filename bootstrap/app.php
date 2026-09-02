@@ -51,7 +51,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Surface exception class on /up so we can diagnose Vercel 500s without
         // APP_DEBUG (never include the message — it can contain DSNs).
         $exceptions->render(function (\Throwable $e, \Illuminate\Http\Request $request) {
-            if ($request->is('up')) {
+            if ($request->is('up') || $request->header('X-KoriePay-Debug') === '1') {
                 return response()->json([
                     'status' => 'error',
                     'exception' => $e::class,
